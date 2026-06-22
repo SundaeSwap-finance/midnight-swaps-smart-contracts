@@ -1,0 +1,17 @@
+pragma language_version >= 0.22.0;
+
+import CompactStandardLibrary;
+
+witness randomNonce(): Bytes<32>;
+
+export circuit mint(tokenColor: Bytes<32>, amount: Uint<64>, coinPK: ZswapCoinPublicKey): [] {
+    // NB: all fields are disclosed, but mintShieldedToken hashes them internally.
+    // tokenColor and amount will be publicly visible on the ledger (from effects),
+    // but randomNonce and coinPK are only used within the hash.
+    mintShieldedToken(
+        disclose(tokenColor),
+        disclose(amount),
+        disclose(randomNonce()),
+        left<ZswapCoinPublicKey, ContractAddress>(disclose(coinPK))
+    );
+}

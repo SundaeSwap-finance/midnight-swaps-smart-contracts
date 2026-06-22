@@ -1,0 +1,21 @@
+{
+  "name": "midnight-swaps-smart-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "compile": "COMPACTC_VERSION=0.31.0 fetch-compactc && npm run compile:test-token",
+    "compile:test-token": "run-compactc contracts/test-token/test-token.compact contracts/test-token/managed",
+    "test": "npm run compile"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@midnight-ntwrk/midnight-js-compact": "^4.1.1"
+  }
+}
