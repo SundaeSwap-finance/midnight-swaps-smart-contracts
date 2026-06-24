@@ -6,7 +6,8 @@
  *   npx tsx scripts/deploy-test-token.ts
  *
  * Required env vars:
- *   TEST_TOKEN_SEED      64-char hex seed for the deployer wallet
+ *   TEST_TOKEN_SEED      BIP-39 mnemonic phrase, or a 64-char (32-byte) or
+ *                        128-char (64-byte) hex seed for the deployer wallet
  *   NETWORK_ID           undeployed | preprod | mainnet
  *
  * Optional (defaults are derived from NETWORK_ID):
@@ -59,6 +60,8 @@ import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-pri
 import { indexerPublicDataProvider } from "@midnight-ntwrk/midnight-js-indexer-public-data-provider";
 import { httpClientProofProvider } from "@midnight-ntwrk/midnight-js-http-client-proof-provider";
 
+import { mnemonicToSeedSync, validateMnemonic } from "@scure/bip39";
+import { wordlist } from "@scure/bip39/wordlists/english.js";
 import { tap, sampleTime } from "rxjs";
 import pino from "pino";
 
@@ -404,17 +407,31 @@ parseArgs();
 loadDotEnv(path.resolve(PROJECT_ROOT, ".env"));
 
 const networkId = requireEnv("NETWORK_ID");
-const seed = requireEnv("TEST_TOKEN_SEED");
+const seedRaw = requireEnv("TEST_TOKEN_SEED");
 
-const HEX64 = /^[0-9a-f]{64}$/i;
-if (!HEX64.test(seed)) {
-  console.error("[deploy-test-token] TEST_TOKEN_SEED must be a 64-char hex string");
+// Accept either a BIP-39 mnemonic (space-separated words) or a hex seed
+// (64 chars = 32 bytes, or 128 chars = 64-byte PBKDF2 seed).
+let seedBytes: Buffer;
+const HEX = /^[0-9a-f]+$/i;
+if (seedRaw.includes(" ")) {
+  if (!validateMnemonic(seedRaw, wordlist)) {
+    console.error("[deploy-test-token] TEST_TOKEN_SEED is not a valid BIP-39 mnemonic");
+    process.exit(1);
+  }
+  seedBytes = Buffer.from(mnemonicToSeedSync(seedRaw));
+} else if (HEX.test(seedRaw) && (seedRaw.length === 64 || seedRaw.length === 128)) {
+  seedBytes = Buffer.from(seedRaw, "hex");
+} else {
+  console.error("[deploy-test-token] TEST_TOKEN_SEED must be a BIP-39 mnemonic or a 64/128-char hex string");
   process.exit(1);
 }
 
+// Use the last 8 hex chars of the seed for cache file naming (same as hex case)
+const seedHex = seedBytes.toString("hex");
+
 setNetworkId(networkId);
 
-const cacheFile = walletCacheFilePath(seed, networkId);
+const cacheFile = walletCacheFilePath(seedHex, networkId);
 const cache = loadWalletSyncCache(cacheFile);
 if (cache) {
   logger.info(`[deploy-test-token] wallet cache found (appliedIndex=${cache.appliedIndex})`);
@@ -423,9 +440,9 @@ if (cache) {
 }
 
 logger.info("[deploy-test-token] initialising wallet…");
-const { wallet, ...keys } = await initWalletWithSeed(Buffer.from(seed, "hex"), cache ?? undefined);
+const { wallet, ...keys } = await initWalletWithSeed(seedBytes, cache ?? undefined);
 
-const cacheWriter = persistWalletSyncCache(wallet, cacheFile, { seed, networkId });
+const cacheWriter = persistWalletSyncCache(wallet, cacheFile, { seed: seedHex, networkId });
 
 logger.info("[deploy-test-token] waiting for sync…");
 const syncedState = await wallet.waitForSyncedState();
