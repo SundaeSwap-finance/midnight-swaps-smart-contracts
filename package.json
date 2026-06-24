@@ -9,13 +9,30 @@
   "scripts": {
     "compile": "COMPACTC_VERSION=0.31.0 fetch-compactc && npm run compile:test-token",
     "compile:test-token": "run-compactc contracts/test-token/test-token.compact contracts/test-token/managed",
+    "deploy:test-token": "tsx scripts/deploy-test-token.ts",
     "test": "npm run compile"
   },
   "engines": {
     "node": ">=22"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@midnight-ntwrk/compact-js": "2.5.1",
+    "@midnight-ntwrk/ledger-v8": "8.1.0",
+    "@midnight-ntwrk/midnight-js": "4.1.1",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "4.1.1",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "4.1.1",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "4.1.1",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "4.1.1",
+    "@midnight-ntwrk/wallet-sdk": "1.1.0",
+    "buffer": "^6.0.3",
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.0.0",
+    "rxjs": "^7.8.0"
+  },
   "devDependencies": {
-    "@midnight-ntwrk/midnight-js-compact": "^4.1.1"
+    "@midnight-ntwrk/midnight-js-compact": "^4.1.1",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
   }
 }
